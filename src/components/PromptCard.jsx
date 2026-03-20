@@ -39,7 +39,6 @@ export default function PromptCard({ prompt, onEdit, onDelete }) {
       <div className="card-top">
         <div className="card-top-left">
           <span className="card-cat" data-cat={prompt.category}>{prompt.category}</span>
-          <span className="card-source" style={{ background: sourceColor }}>{prompt.source || 'Unknown'}</span>
         </div>
         <span className="card-meta">{prompt.dateAdded}</span>
       </div>

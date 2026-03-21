@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { SEED_PROMPTS } from '../data/seedPrompts';
 
 const STORAGE_KEY = 'prompt-datastore-prompts';
-const DATA_VERSION = '2'; // Bump this when seed data changes significantly
+const DATA_VERSION = '3'; // Bumped for Master XLSX update (87 prompts)
 const VERSION_KEY = 'prompt-datastore-version';
 
 function generateId() {

@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { SEED_PROMPTS } from '../data/seedPrompts';
 
 const STORAGE_KEY = 'prompt-datastore-prompts';
+const DATA_VERSION = '2'; // Bump this when seed data changes significantly
+const VERSION_KEY = 'prompt-datastore-version';
 
 function generateId() {
   return 'p' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -9,14 +11,30 @@ function generateId() {
 
 function loadPrompts() {
   try {
+    const storedVersion = localStorage.getItem(VERSION_KEY);
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+
+    if (stored && storedVersion === DATA_VERSION) {
+      // Data is up to date — load from localStorage
       return JSON.parse(stored);
+    }
+
+    if (stored && storedVersion !== DATA_VERSION) {
+      // Version mismatch — merge: keep user-added prompts (non-TAAFT or id doesn't start with 'p0')
+      // but replace seed prompts with the new updated seed data
+      const existing = JSON.parse(stored);
+      const seedIds = new Set(SEED_PROMPTS.map(p => p.id));
+      const userAdded = existing.filter(p => !seedIds.has(p.id));
+      const merged = [...SEED_PROMPTS, ...userAdded];
+      localStorage.setItem(VERSION_KEY, DATA_VERSION);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      return merged;
     }
   } catch (e) {
     console.error('Failed to load prompts from localStorage:', e);
   }
   // First run — seed with imported prompts
+  localStorage.setItem(VERSION_KEY, DATA_VERSION);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PROMPTS));
   return [...SEED_PROMPTS];
 }

@@ -4,10 +4,10 @@ export default function Header({ totalCount, shownCount, categoryCount, onAddCli
       <header className="masthead">
         <div className="masthead-inner">
           <div className="masthead-rule" />
-          <h1>The Prompt Library</h1>
-          <p className="masthead-sub">A Curated Collection by Shahbaz</p>
+          <h1>Welcome to Shahbaz's Prompt Library</h1>
+          <p className="masthead-sub">A Curated Collection by Hakeem the Agent</p>
           <div className="masthead-edition">
-            <span>Est. December 2024</span>
+            <span>Est. March 2026</span>
             <span>·</span>
             <span>Prompt Datastore v2.0</span>
           </div>

@@ -4,6 +4,7 @@ import Header from './components/Header';
 import SearchBar from './components/SearchBar';
 import PromptGrid from './components/PromptGrid';
 import PromptModal from './components/PromptModal';
+import VisitorCounter from './components/VisitorCounter';
 
 export default function App() {
   const {
@@ -112,6 +113,7 @@ export default function App() {
 
       <footer>
         <p>Shahbaz's Prompt Library — Prompt Datastore v2.0</p>
+        <VisitorCounter />
       </footer>
     </div>
   );

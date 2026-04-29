@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { SEED_PROMPTS } from '../data/seedPrompts';
 
 const STORAGE_KEY = 'prompt-datastore-prompts';
-const DATA_VERSION = '4'; // Bumped for TAAFT Apr 2026 update (109 prompts)
+const DATA_VERSION = '5'; // Hardened build with bulletproof storage handling
 const VERSION_KEY = 'prompt-datastore-version';
 
 function generateId() {
@@ -10,9 +10,13 @@ function generateId() {
 }
 
 function loadPrompts() {
-  const sanitize = arr => Array.isArray(arr)
-    ? arr.filter(p => p && typeof p === 'object' && p.id && p.title)
-    : null;
+  const isValidPrompt = p => p && typeof p === 'object'
+    && typeof p.id === 'string' && p.id.length > 0
+    && typeof p.title === 'string' && p.title.length > 0
+    && typeof p.category === 'string'
+    && typeof p.description === 'string';
+
+  const sanitize = arr => Array.isArray(arr) ? arr.filter(isValidPrompt) : null;
 
   let storedVersion = null, stored = null;
   try {
@@ -22,35 +26,18 @@ function loadPrompts() {
     console.warn('Could not read localStorage:', e);
   }
 
+  // Cache hit AND version matches AND data parses cleanly → use it
   if (stored && storedVersion === DATA_VERSION) {
     try {
       const parsed = sanitize(JSON.parse(stored));
-      if (parsed) return parsed;
+      if (parsed && parsed.length > 0) return parsed;
     } catch (e) {
-      console.warn('Cached prompts malformed, re-seeding:', e);
+      console.warn('Cached prompts unreadable, falling back to seed:', e);
     }
   }
 
-  if (stored && storedVersion !== DATA_VERSION) {
-    try {
-      const existing = sanitize(JSON.parse(stored));
-      if (existing) {
-        const seedIds = new Set(SEED_PROMPTS.map(p => p.id));
-        const userAdded = existing.filter(p => !seedIds.has(p.id));
-        const merged = [...SEED_PROMPTS, ...userAdded];
-        try {
-          localStorage.setItem(VERSION_KEY, DATA_VERSION);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-        } catch (e) {
-          console.warn('Could not persist merged prompts (storage full?):', e);
-        }
-        return merged;
-      }
-    } catch (e) {
-      console.warn('Merge failed, falling back to seed:', e);
-    }
-  }
-
+  // Anything else (first run / version mismatch / corrupted data) → fresh seed.
+  // No merge: keeps load deterministic. Users can re-import custom prompts via Import button.
   try {
     localStorage.setItem(VERSION_KEY, DATA_VERSION);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PROMPTS));

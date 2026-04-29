@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { SEED_PROMPTS } from '../data/seedPrompts';
 
 const STORAGE_KEY = 'prompt-datastore-prompts';
-const DATA_VERSION = '4'; // Bumped for TAAFT Apr 2026 update (109 prompts)
+const DATA_VERSION = '3'; // Bumped for Master XLSX update (87 prompts)
 const VERSION_KEY = 'prompt-datastore-version';
 
 function generateId() {

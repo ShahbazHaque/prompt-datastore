@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { SEED_PROMPTS } from '../data/seedPrompts';
 
 const STORAGE_KEY = 'prompt-datastore-prompts';
-const DATA_VERSION = '3'; // Bumped for Master XLSX update (87 prompts)
+const DATA_VERSION = '4'; // Bumped for TAAFT Apr 2026 update (109 prompts)
 const VERSION_KEY = 'prompt-datastore-version';
 
 function generateId() {
@@ -10,37 +10,62 @@ function generateId() {
 }
 
 function loadPrompts() {
+  const sanitize = arr => Array.isArray(arr)
+    ? arr.filter(p => p && typeof p === 'object' && p.id && p.title)
+    : null;
+
+  let storedVersion = null, stored = null;
   try {
-    const storedVersion = localStorage.getItem(VERSION_KEY);
-    const stored = localStorage.getItem(STORAGE_KEY);
-
-    if (stored && storedVersion === DATA_VERSION) {
-      // Data is up to date — load from localStorage
-      return JSON.parse(stored);
-    }
-
-    if (stored && storedVersion !== DATA_VERSION) {
-      // Version mismatch — merge: keep user-added prompts (non-TAAFT or id doesn't start with 'p0')
-      // but replace seed prompts with the new updated seed data
-      const existing = JSON.parse(stored);
-      const seedIds = new Set(SEED_PROMPTS.map(p => p.id));
-      const userAdded = existing.filter(p => !seedIds.has(p.id));
-      const merged = [...SEED_PROMPTS, ...userAdded];
-      localStorage.setItem(VERSION_KEY, DATA_VERSION);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-      return merged;
-    }
+    storedVersion = localStorage.getItem(VERSION_KEY);
+    stored = localStorage.getItem(STORAGE_KEY);
   } catch (e) {
-    console.error('Failed to load prompts from localStorage:', e);
+    console.warn('Could not read localStorage:', e);
   }
-  // First run — seed with imported prompts
-  localStorage.setItem(VERSION_KEY, DATA_VERSION);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PROMPTS));
+
+  if (stored && storedVersion === DATA_VERSION) {
+    try {
+      const parsed = sanitize(JSON.parse(stored));
+      if (parsed) return parsed;
+    } catch (e) {
+      console.warn('Cached prompts malformed, re-seeding:', e);
+    }
+  }
+
+  if (stored && storedVersion !== DATA_VERSION) {
+    try {
+      const existing = sanitize(JSON.parse(stored));
+      if (existing) {
+        const seedIds = new Set(SEED_PROMPTS.map(p => p.id));
+        const userAdded = existing.filter(p => !seedIds.has(p.id));
+        const merged = [...SEED_PROMPTS, ...userAdded];
+        try {
+          localStorage.setItem(VERSION_KEY, DATA_VERSION);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        } catch (e) {
+          console.warn('Could not persist merged prompts (storage full?):', e);
+        }
+        return merged;
+      }
+    } catch (e) {
+      console.warn('Merge failed, falling back to seed:', e);
+    }
+  }
+
+  try {
+    localStorage.setItem(VERSION_KEY, DATA_VERSION);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PROMPTS));
+  } catch (e) {
+    console.warn('Could not persist seed prompts (running in memory only):', e);
+  }
   return [...SEED_PROMPTS];
 }
 
 function savePrompts(prompts) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(prompts));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(prompts));
+  } catch (e) {
+    console.warn('Could not persist prompts to localStorage:', e);
+  }
 }
 
 export function usePrompts() {
